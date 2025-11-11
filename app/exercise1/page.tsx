@@ -1,18 +1,14 @@
-import { Range } from "@/app/components/range/Range";
-import { RangePropsSchema } from "../components/range/schema";
+import Range from "@/app/components/range/Range";
 
 export default async function Exercise1Page() {
   const res = await fetch("http://localhost:8080/api/exercise1", {
     cache: "no-store",
   });
-  const data = await res.json();
   if (!res.ok) return "Failed to load continuous range configuration";
-
-  const parsedData = RangePropsSchema.safeParse(data);
-  if (!parsedData.success)
-    return "Invalid response shape for continuous range configuration";
-
-  const range = parsedData.data;
+  const range: {
+    min: number;
+    max: number;
+  } = await res.json();
 
   return (
     <main className="w-full space-y-8 rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm">
