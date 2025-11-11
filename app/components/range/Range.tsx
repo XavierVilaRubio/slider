@@ -12,9 +12,14 @@ import {
   clamp,
   findNearestFixedValue,
   formatCurrency,
+  getAdjacentFixedValue,
   roundToStep,
 } from "@/app/components/range/utils";
-import type { ChangeEvent, PointerEvent as ReactPointerEvent } from "react";
+import type {
+  ChangeEvent,
+  KeyboardEvent,
+  PointerEvent as ReactPointerEvent,
+} from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { twMerge } from "tailwind-merge";
 
@@ -168,6 +173,7 @@ const Thumb = ({ handle, ...props }: ThumbProps) => {
     continuousMax,
     getPercentForValue,
     handlePointerDownFactory,
+    handleKeyboardFactory,
   } = useRangeContext();
   const percent = getPercentForValue(handle === "min" ? value[0] : value[1]);
   const aria =
@@ -187,11 +193,13 @@ const Thumb = ({ handle, ...props }: ThumbProps) => {
   return (
     <button
       type="button"
-      className="absolute top-1/2 size-5 -translate-1/2 cursor-grab rounded-full border-2 border-white bg-blue-500 shadow transition-[transform,shadow] hover:scale-110 data-[active=true]:scale-110 data-[active=true]:cursor-grabbing"
+      className="absolute top-1/2 size-5 -translate-1/2 cursor-grab rounded-full border-2 border-white bg-blue-500 shadow transition-[transform,shadow] hover:scale-110 focus:scale-110 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none data-[active=true]:scale-110 data-[active=true]:cursor-grabbing"
       data-active={activeHandle === handle}
       style={{ left: `${percent}%` }}
       onPointerDown={handlePointerDownFactory(handle)}
+      onKeyDown={handleKeyboardFactory(handle)}
       role="slider"
+      tabIndex={0}
       {...aria}
       {...props}
     />
@@ -361,6 +369,67 @@ const Range = (props: RangeProps) => {
     [updateValue],
   );
 
+  const handleKeyboardFactory = useCallback(
+    (handle: Exclude<ActiveHandle, null>) => {
+      return (event: KeyboardEvent<HTMLButtonElement>) => {
+        const currentValue = handle === "min" ? value[0] : value[1];
+        let newValue: number | null = null;
+
+        let direction: 1 | -1 | null = null;
+        if (
+          event.key === "ArrowRight" ||
+          event.key === "ArrowUp" ||
+          event.key === "PageUp"
+        ) {
+          direction = 1;
+        } else if (
+          event.key === "ArrowLeft" ||
+          event.key === "ArrowDown" ||
+          event.key === "PageDown"
+        ) {
+          direction = -1;
+        }
+
+        if (direction !== null) {
+          if (mode === "fixed" && sortedFixedValues) {
+            const minConstraint = handle === "min" ? continuousMin : value[0];
+            const maxConstraint = handle === "min" ? value[1] : continuousMax;
+            const adjacent = getAdjacentFixedValue(
+              currentValue,
+              sortedFixedValues,
+              direction,
+              minConstraint,
+              maxConstraint,
+            );
+            if (adjacent !== null) {
+              newValue = adjacent;
+            }
+          } else {
+            const stepSize =
+              event.key === "PageUp" || event.key === "PageDown"
+                ? step * 10
+                : step;
+            newValue = currentValue + direction * stepSize;
+          }
+        }
+
+        if (newValue !== null) {
+          event.preventDefault();
+          updateValue(handle, newValue);
+        }
+      };
+    },
+    [
+      value,
+      mode,
+      sortedFixedValues,
+      continuousMin,
+      continuousMax,
+      step,
+      updateValue,
+    ],
+  );
+
   const ctx: RangeContextValue = useMemo(
     () => ({
       trackRef,
@@ -375,6 +444,7 @@ const Range = (props: RangeProps) => {
       updateValue,
       handlePointerDownFactory,
       handleInputChangeFactory,
+      handleKeyboardFactory,
       activeHandle,
     }),
     [
@@ -390,6 +460,7 @@ const Range = (props: RangeProps) => {
       updateValue,
       handlePointerDownFactory,
       handleInputChangeFactory,
+      handleKeyboardFactory,
       activeHandle,
     ],
   );

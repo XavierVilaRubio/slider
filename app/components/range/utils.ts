@@ -81,6 +81,44 @@ export const findNearestFixedValue = (
   return findNearestInArray(value, fixedValues);
 };
 
+export const getAdjacentFixedValue = (
+  currentValue: number,
+  fixedValues: number[],
+  direction: 1 | -1,
+  min?: number,
+  max?: number,
+): number | null => {
+  if (fixedValues.length === 0) return null;
+
+  let validValues = fixedValues;
+  if (min !== undefined || max !== undefined) {
+    validValues = fixedValues.filter((v) => {
+      if (min !== undefined && v < min) return false;
+      if (max !== undefined && v > max) return false;
+      return true;
+    });
+    if (validValues.length === 0) return null;
+  }
+
+  const currentIndex = validValues.findIndex((v) => v === currentValue);
+
+  if (currentIndex >= 0) {
+    const nextIndex = currentIndex + direction;
+    if (nextIndex < 0) return validValues[0];
+    if (nextIndex >= validValues.length)
+      return validValues[validValues.length - 1];
+    return validValues[nextIndex];
+  } else {
+    if (direction === 1) {
+      const nextValue = validValues.find((v) => v > currentValue);
+      return nextValue ?? validValues[validValues.length - 1];
+    } else {
+      const prevValue = validValues.findLast((v) => v < currentValue);
+      return prevValue ?? validValues[0];
+    }
+  }
+};
+
 export const formatCurrency = (value: number): string => {
   return new Intl.NumberFormat("es-ES", {
     style: "currency",

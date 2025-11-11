@@ -3,6 +3,7 @@ import {
   useContext,
   type ChangeEvent,
   type Dispatch,
+  type KeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   type RefObject,
   type SetStateAction,
@@ -28,6 +29,9 @@ export type RangeContextValue = {
   handleInputChangeFactory: (
     handle: Exclude<ActiveHandle, null>,
   ) => (event: ChangeEvent<HTMLInputElement>) => void;
+  handleKeyboardFactory: (
+    handle: Exclude<ActiveHandle, null>,
+  ) => (event: KeyboardEvent<HTMLButtonElement>) => void;
   activeHandle: ActiveHandle;
 };
 
