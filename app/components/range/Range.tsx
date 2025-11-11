@@ -5,13 +5,18 @@ import {
   useRangeContext,
   type ActiveHandle,
   type RangeContextValue,
+  type RangeMode,
 } from "@/app/components/range/context";
-import { RangePropsSchema } from "@/app/components/range/schema";
-import { clamp, roundToStep } from "@/app/components/range/utils";
+import { type RangeProps } from "@/app/components/range/schema";
+import {
+  clamp,
+  findNearestFixedValue,
+  formatCurrency,
+  roundToStep,
+} from "@/app/components/range/utils";
 import type { ChangeEvent, PointerEvent as ReactPointerEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { twMerge } from "tailwind-merge";
-import * as z from "zod/mini";
 
 type RangeInputProps = React.ComponentProps<"input"> & {
   handle: Exclude<ActiveHandle, null>;
@@ -20,6 +25,7 @@ type RangeInputProps = React.ComponentProps<"input"> & {
 const Input = ({ handle, label, ...props }: RangeInputProps) => {
   const { value, updateValue, continuousMin, continuousMax, step } =
     useRangeContext();
+
   const currentValue = handle === "min" ? value[0] : value[1];
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [text, setText] = useState<string>(String(currentValue));
@@ -59,7 +65,7 @@ const Input = ({ handle, label, ...props }: RangeInputProps) => {
       <input
         ref={inputRef}
         type="number"
-        className="w-full appearance-none rounded-lg border border-slate-900/10 bg-white px-3 py-2 text-base font-medium text-slate-900 transition-colors outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
+        className="w-full max-w-[10ch] appearance-none rounded-lg border border-slate-900/10 bg-white px-3 py-2 text-base font-medium text-slate-900 transition-colors outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
         value={text}
         onChange={(e) => {
           const next = e.target.value;
@@ -90,16 +96,46 @@ const Input = ({ handle, label, ...props }: RangeInputProps) => {
 
 type RangeTrackProps = React.ComponentProps<"div">;
 const Track = ({ children, ...props }: RangeTrackProps) => {
-  const { trackRef } = useRangeContext();
+  const { trackRef, mode, fixedValues } = useRangeContext();
   return (
-    <div
-      className="track relative m-auto mx-2.5 h-2 w-full rounded-full bg-linear-to-r from-slate-200/90 to-blue-200/90"
-      ref={trackRef}
-      {...props}
-    >
-      <Selected />
-      <Thumb handle="min" />
-      <Thumb handle="max" />
+    <div className="relative mx-2.5 my-auto flex-1">
+      <div
+        className="track relative h-2 w-full rounded-full bg-linear-to-r from-slate-200/90 to-blue-200/90"
+        ref={trackRef}
+        {...props}
+      >
+        <Selected />
+        <Thumb handle="min" />
+        <Thumb handle="max" />
+      </div>
+      {mode === "fixed" && fixedValues && (
+        <FixedValueLabels values={fixedValues} />
+      )}
+    </div>
+  );
+};
+
+type FixedValueLabelsProps = {
+  values: number[];
+};
+const FixedValueLabels = ({ values }: FixedValueLabelsProps) => {
+  const { getPercentForValue, continuousMin, continuousMax } =
+    useRangeContext();
+
+  return (
+    <div className="relative mt-2">
+      {values.map((value, index) => {
+        const percent = getPercentForValue(value);
+        return (
+          <div
+            key={index}
+            className="absolute -translate-x-1/2 text-xs text-slate-600"
+            style={{ left: `${percent}%` }}
+          >
+            {formatCurrency(value)}
+          </div>
+        );
+      })}
     </div>
   );
 };
@@ -151,7 +187,7 @@ const Thumb = ({ handle, ...props }: ThumbProps) => {
   return (
     <button
       type="button"
-      className="absolute top-1/2 size-5 -translate-1/2 cursor-grab rounded-full border-2 border-white bg-blue-500 shadow transition-[transform,shadow] hover:scale-110 data-[active=true]:cursor-grabbing"
+      className="absolute top-1/2 size-5 -translate-1/2 cursor-grab rounded-full border-2 border-white bg-blue-500 shadow transition-[transform,shadow] hover:scale-110 data-[active=true]:scale-110 data-[active=true]:cursor-grabbing"
       data-active={activeHandle === handle}
       style={{ left: `${percent}%` }}
       onPointerDown={handlePointerDownFactory(handle)}
@@ -162,13 +198,25 @@ const Thumb = ({ handle, ...props }: ThumbProps) => {
   );
 };
 
-type RangeProps = z.infer<typeof RangePropsSchema> & {
-  step?: number;
-  className?: string;
-};
-const Range = ({ min, max, step = 0.1, className }: RangeProps) => {
+const Range = (props: RangeProps) => {
   const trackRef = useRef<HTMLDivElement | null>(null);
   const [activeHandle, setActiveHandle] = useState<ActiveHandle>(null);
+
+  const mode: RangeMode = useMemo(() => {
+    if ("rangeValues" in props && props.rangeValues) {
+      return "fixed";
+    }
+    return "continuous";
+  }, [props]);
+
+  const { min, max, step = 0.1, className, rangeValues } = props;
+
+  const sortedFixedValues = useMemo(() => {
+    if (mode === "fixed" && rangeValues) {
+      return [...rangeValues].sort((a, b) => a - b);
+    }
+    return undefined;
+  }, [mode, rangeValues]);
 
   const [continuousMin, continuousMax] = useMemo(() => {
     const safeMin = Math.min(min, max);
@@ -176,10 +224,28 @@ const Range = ({ min, max, step = 0.1, className }: RangeProps) => {
     return [safeMin, safeMax] as const;
   }, [min, max]);
 
-  const [value, setValue] = useState<[number, number]>(() => [
-    continuousMin,
-    continuousMax,
-  ]);
+  const [value, setValue] = useState<[number, number]>(() => {
+    if (mode === "fixed" && sortedFixedValues && sortedFixedValues.length > 0) {
+      const validValues = sortedFixedValues.filter(
+        (v) => v >= continuousMin && v <= continuousMax,
+      );
+
+      if (validValues.length === 0) {
+        const minFixed = findNearestFixedValue(
+          continuousMin,
+          sortedFixedValues,
+        );
+        const maxFixed = findNearestFixedValue(
+          continuousMax,
+          sortedFixedValues,
+        );
+        return [minFixed, maxFixed];
+      }
+
+      return [validValues[0], validValues[validValues.length - 1]];
+    }
+    return [continuousMin, continuousMax];
+  });
 
   const getPercentForValue = useCallback(
     (input: number) => {
@@ -193,23 +259,45 @@ const Range = ({ min, max, step = 0.1, className }: RangeProps) => {
     (handle: Exclude<ActiveHandle, null>, nextValue: number) => {
       setValue((current) => {
         let [currentMin, currentMax] = current;
-        if (handle === "min") {
-          const snapped = roundToStep(
-            clamp(nextValue, continuousMin, currentMax),
-            step,
-          );
-          currentMin = Math.min(snapped, currentMax);
+
+        if (mode === "fixed" && sortedFixedValues) {
+          if (handle === "min") {
+            const candidate = findNearestFixedValue(
+              nextValue,
+              sortedFixedValues,
+              continuousMin,
+              currentMax,
+            );
+            currentMin = candidate;
+          } else {
+            const candidate = findNearestFixedValue(
+              nextValue,
+              sortedFixedValues,
+              currentMin,
+              continuousMax,
+            );
+            currentMax = candidate;
+          }
         } else {
-          const snapped = roundToStep(
-            clamp(nextValue, currentMin, continuousMax),
-            step,
-          );
-          currentMax = Math.max(snapped, currentMin);
+          if (handle === "min") {
+            const snapped = roundToStep(
+              clamp(nextValue, continuousMin, currentMax),
+              step,
+            );
+            currentMin = Math.min(snapped, currentMax);
+          } else {
+            const snapped = roundToStep(
+              clamp(nextValue, currentMin, continuousMax),
+              step,
+            );
+            currentMax = Math.max(snapped, currentMin);
+          }
         }
+
         return [currentMin, currentMax];
       });
     },
-    [continuousMin, continuousMax, step],
+    [mode, sortedFixedValues, continuousMin, continuousMax, step],
   );
 
   const handlePointerMove = useCallback(
@@ -221,9 +309,14 @@ const Range = ({ min, max, step = 0.1, className }: RangeProps) => {
       const relative = clamp((clientX - rect.left) / rect.width, 0, 1);
       const candidate =
         continuousMin + relative * (continuousMax - continuousMin);
-      updateValue(closeHandle, candidate);
+
+      if (mode === "fixed" && sortedFixedValues) {
+        updateValue(closeHandle, candidate);
+      } else {
+        updateValue(closeHandle, candidate);
+      }
     },
-    [continuousMin, continuousMax, updateValue],
+    [mode, sortedFixedValues, continuousMin, continuousMax, updateValue],
   );
 
   useEffect(() => {
@@ -276,6 +369,8 @@ const Range = ({ min, max, step = 0.1, className }: RangeProps) => {
       continuousMin,
       continuousMax,
       step,
+      mode,
+      fixedValues: sortedFixedValues,
       getPercentForValue,
       updateValue,
       handlePointerDownFactory,
@@ -288,6 +383,9 @@ const Range = ({ min, max, step = 0.1, className }: RangeProps) => {
       setValue,
       continuousMin,
       continuousMax,
+      step,
+      mode,
+      sortedFixedValues,
       getPercentForValue,
       updateValue,
       handlePointerDownFactory,
@@ -299,12 +397,12 @@ const Range = ({ min, max, step = 0.1, className }: RangeProps) => {
   return (
     <RangeContext.Provider value={ctx}>
       <div
-        className={twMerge("flex gap-4", className)}
+        className={twMerge("flex gap-8", className)}
         data-dragging={Boolean(activeHandle)}
       >
-        <Input handle="min" label="Minimum value" />
+        <Input handle="min" label="Minimum value" disabled={mode === "fixed"} />
         <Track />
-        <Input handle="max" label="Maximum value" />
+        <Input handle="max" label="Maximum value" disabled={mode === "fixed"} />
       </div>
     </RangeContext.Provider>
   );

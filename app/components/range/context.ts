@@ -9,6 +9,7 @@ import {
 } from "react";
 
 export type ActiveHandle = "min" | "max" | null;
+export type RangeMode = "continuous" | "fixed";
 
 export type RangeContextValue = {
   trackRef: RefObject<HTMLDivElement | null>;
@@ -17,6 +18,8 @@ export type RangeContextValue = {
   continuousMin: number;
   continuousMax: number;
   step: number;
+  mode: RangeMode;
+  fixedValues?: number[];
   getPercentForValue: (input: number) => number;
   updateValue: (handle: Exclude<ActiveHandle, null>, nextValue: number) => void;
   handlePointerDownFactory: (

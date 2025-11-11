@@ -5,6 +5,10 @@ const links = [
     href: "/exercise1",
     title: "Exercise 1",
   },
+  {
+    href: "/exercise2",
+    title: "Exercise 2",
+  },
 ];
 
 export default function Home() {
