@@ -1,16 +1,16 @@
 import { useRangeContext } from "@/components/range/context";
-import { formatCurrency } from "@/components/range/utils";
+import { formatCurrency, getPercentForValue } from "@/components/range/utils";
 
 type FixedValueLabelsProps = {
   values: number[];
 };
 const FixedValueLabels = ({ values }: FixedValueLabelsProps) => {
-  const { getPercentForValue } = useRangeContext();
+  const { continuousMin, continuousMax } = useRangeContext();
 
   return (
     <div className="relative mt-2">
       {values.map((value, index) => {
-        const percent = getPercentForValue(value);
+        const percent = getPercentForValue(value, continuousMin, continuousMax);
         return (
           <div
             key={index}

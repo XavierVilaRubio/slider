@@ -1,4 +1,4 @@
-import Range from "@/components/range/Range";
+import Range from "@/app/components/range/ui/Range";
 import Link from "next/link";
 
 export default async function Exercise1Page() {

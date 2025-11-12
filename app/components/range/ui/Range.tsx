@@ -6,9 +6,9 @@ import {
   type RangeContextValue,
   type RangeMode,
 } from "@/components/range/context";
-import Input from "@/components/range/Input";
 import { type RangeProps } from "@/components/range/schema";
-import Track from "@/components/range/Track";
+import Input from "@/components/range/ui/Input";
+import Track from "@/components/range/ui/Track";
 import {
   clamp,
   findNearestFixedValue,
@@ -73,20 +73,16 @@ const Range = (props: RangeProps) => {
     return [continuousMin, continuousMax];
   });
 
-  const getPercentForValue = useCallback(
-    (input: number) => {
-      if (continuousMax === continuousMin) return 0;
-      return ((input - continuousMin) / (continuousMax - continuousMin)) * 100;
-    },
-    [continuousMin, continuousMax],
-  );
-
   const updateValue = useCallback(
     (handle: Exclude<ActiveHandle, null>, nextValue: number) => {
       setValue((current) => {
-        let [currentMin, currentMax] = current;
+        const [currentMin, currentMax] = current;
 
-        if (mode === "fixed" && sortedFixedValues) {
+        if (mode === "fixed") {
+          if (!sortedFixedValues?.length) {
+            return current;
+          }
+
           if (handle === "min") {
             const candidate = findNearestFixedValue(
               nextValue,
@@ -94,33 +90,39 @@ const Range = (props: RangeProps) => {
               continuousMin,
               currentMax,
             );
-            currentMin = candidate;
-          } else {
+            return [candidate, currentMax];
+          }
+
+          if (handle === "max") {
             const candidate = findNearestFixedValue(
               nextValue,
               sortedFixedValues,
               currentMin,
               continuousMax,
             );
-            currentMax = candidate;
+            return [currentMin, candidate];
           }
-        } else {
-          if (handle === "min") {
-            const snapped = roundToStep(
-              clamp(nextValue, continuousMin, currentMax),
-              step,
-            );
-            currentMin = Math.min(snapped, currentMax);
-          } else {
-            const snapped = roundToStep(
-              clamp(nextValue, currentMin, continuousMax),
-              step,
-            );
-            currentMax = Math.max(snapped, currentMin);
-          }
+
+          return current;
         }
 
-        return [currentMin, currentMax];
+        if (handle === "min") {
+          const snapped = roundToStep(
+            clamp(nextValue, continuousMin, currentMax),
+            step,
+          );
+          return [Math.min(snapped, currentMax), currentMax];
+        }
+
+        if (handle === "max") {
+          const snapped = roundToStep(
+            clamp(nextValue, currentMin, continuousMax),
+            step,
+          );
+          return [currentMin, Math.max(snapped, currentMin)];
+        }
+
+        return current;
       });
     },
     [mode, sortedFixedValues, continuousMin, continuousMax, step],
@@ -129,9 +131,13 @@ const Range = (props: RangeProps) => {
   const handlePointerMove = useCallback(
     (closeHandle: Exclude<ActiveHandle, null>, clientX: number) => {
       const track = trackRef.current;
-      if (!track) return;
+      if (!track) {
+        return;
+      }
       const rect = track.getBoundingClientRect();
-      if (!rect.width) return;
+      if (!rect.width) {
+        return;
+      }
       const relative = clamp((clientX - rect.left) / rect.width, 0, 1);
       const candidate =
         continuousMin + relative * (continuousMax - continuousMin);
@@ -190,50 +196,47 @@ const Range = (props: RangeProps) => {
     (handle: Exclude<ActiveHandle, null>) => {
       return (event: KeyboardEvent<HTMLButtonElement>) => {
         const currentValue = handle === "min" ? value[0] : value[1];
-        let newValue: number | null = null;
 
-        let direction: 1 | -1 | null = null;
-        if (
+        const direction =
           event.key === "ArrowRight" ||
           event.key === "ArrowUp" ||
           event.key === "PageUp"
-        ) {
-          direction = 1;
-        } else if (
-          event.key === "ArrowLeft" ||
-          event.key === "ArrowDown" ||
-          event.key === "PageDown"
-        ) {
-          direction = -1;
+            ? 1
+            : event.key === "ArrowLeft" ||
+                event.key === "ArrowDown" ||
+                event.key === "PageDown"
+              ? -1
+              : null;
+
+        if (direction === null) {
+          return;
         }
 
-        if (direction !== null) {
-          if (mode === "fixed" && sortedFixedValues) {
-            const minConstraint = handle === "min" ? continuousMin : value[0];
-            const maxConstraint = handle === "min" ? value[1] : continuousMax;
-            const adjacent = getAdjacentFixedValue(
-              currentValue,
-              sortedFixedValues,
-              direction,
-              minConstraint,
-              maxConstraint,
-            );
-            if (adjacent !== null) {
-              newValue = adjacent;
-            }
-          } else {
-            const stepSize =
-              event.key === "PageUp" || event.key === "PageDown"
-                ? step * 10
-                : step;
-            newValue = currentValue + direction * stepSize;
+        if (mode === "fixed") {
+          if (!sortedFixedValues?.length) {
+            return;
           }
+          const minConstraint = handle === "min" ? continuousMin : value[0];
+          const maxConstraint = handle === "min" ? value[1] : continuousMax;
+          const adjacent = getAdjacentFixedValue(
+            currentValue,
+            sortedFixedValues,
+            direction,
+            minConstraint,
+            maxConstraint,
+          );
+          if (adjacent === null) {
+            return;
+          }
+          event.preventDefault();
+          updateValue(handle, adjacent);
+          return;
         }
 
-        if (newValue !== null) {
-          event.preventDefault();
-          updateValue(handle, newValue);
-        }
+        const stepSize =
+          event.key === "PageUp" || event.key === "PageDown" ? step * 10 : step;
+        event.preventDefault();
+        updateValue(handle, currentValue + direction * stepSize);
       };
     },
     [
@@ -259,7 +262,6 @@ const Range = (props: RangeProps) => {
       step,
       mode,
       fixedValues: sortedFixedValues,
-      getPercentForValue,
       updateValue,
       startGrabbing,
       handleKeyboardInput,
@@ -273,7 +275,6 @@ const Range = (props: RangeProps) => {
       step,
       mode,
       sortedFixedValues,
-      getPercentForValue,
       updateValue,
       startGrabbing,
       handleKeyboardInput,

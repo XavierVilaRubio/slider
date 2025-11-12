@@ -108,15 +108,15 @@ export const getAdjacentFixedValue = (
     if (nextIndex >= validValues.length)
       return validValues[validValues.length - 1];
     return validValues[nextIndex];
-  } else {
-    if (direction === 1) {
-      const nextValue = validValues.find((v) => v > currentValue);
-      return nextValue ?? validValues[validValues.length - 1];
-    } else {
-      const prevValue = validValues.findLast((v) => v < currentValue);
-      return prevValue ?? validValues[0];
-    }
   }
+
+  if (direction === 1) {
+    const nextValue = validValues.find((v) => v > currentValue);
+    return nextValue ?? validValues[validValues.length - 1];
+  }
+
+  const prevValue = validValues.findLast((v) => v < currentValue);
+  return prevValue ?? validValues[0];
 };
 
 export const formatCurrency = (value: number): string => {
@@ -126,4 +126,13 @@ export const formatCurrency = (value: number): string => {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value);
+};
+
+export const getPercentForValue = (
+  input: number,
+  continuousMin: number,
+  continuousMax: number,
+) => {
+  if (continuousMax === continuousMin) return 0;
+  return ((input - continuousMin) / (continuousMax - continuousMin)) * 100;
 };

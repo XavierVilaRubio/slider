@@ -1,11 +1,12 @@
 import { useRangeContext } from "@/components/range/context";
-import FixedValueLabels from "@/components/range/FixedValueLabels";
-import Indicator from "@/components/range/Indicator";
-import Thumb from "@/components/range/Thumb";
+import FixedValueLabels from "@/components/range/ui/FixedValueLabels";
+import Indicator from "@/components/range/ui/Indicator";
+import Thumb from "@/components/range/ui/Thumb";
 
 type RangeTrackProps = React.ComponentProps<"div">;
 const Track = (props: RangeTrackProps) => {
   const { trackRef, mode, fixedValues } = useRangeContext();
+
   return (
     <div className="relative mx-2.5 my-auto flex-1">
       <div

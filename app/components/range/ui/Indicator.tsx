@@ -1,10 +1,13 @@
 import { useRangeContext } from "@/components/range/context";
+import { getPercentForValue } from "../utils";
 
 type IndicatorProps = React.ComponentProps<"div">;
 const Indicator = (props: IndicatorProps) => {
-  const { value, getPercentForValue } = useRangeContext();
-  const minPercent = getPercentForValue(value[0]);
-  const maxPercent = getPercentForValue(value[1]);
+  const { value, continuousMin, continuousMax } = useRangeContext();
+
+  const minPercent = getPercentForValue(value[0], continuousMin, continuousMax);
+  const maxPercent = getPercentForValue(value[1], continuousMin, continuousMax);
+
   return (
     <div
       className="pointer-events-none absolute top-0 h-full rounded-full bg-linear-to-r from-blue-500 to-blue-600"

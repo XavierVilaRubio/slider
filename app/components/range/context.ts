@@ -25,7 +25,6 @@ export type RangeContextValue = {
   step: number;
   mode: RangeMode;
   fixedValues?: number[];
-  getPercentForValue: (input: number) => number;
   updateValue: (handle: Exclude<ActiveHandle, null>, nextValue: number) => void;
   startGrabbing: (
     handle: Exclude<ActiveHandle, null>,

@@ -1,5 +1,5 @@
 import { type ActiveHandle, useRangeContext } from "@/components/range/context";
-
+import { getPercentForValue } from "@/components/range/utils";
 type ThumbProps = React.ComponentProps<"button"> & {
   handle: Exclude<ActiveHandle, null>;
 };
@@ -9,17 +9,23 @@ const Thumb = ({ handle, ...props }: ThumbProps) => {
     value,
     continuousMin,
     continuousMax,
-    getPercentForValue,
     startGrabbing,
     handleKeyboardInput,
   } = useRangeContext();
-  const percent = getPercentForValue(handle === "min" ? value[0] : value[1]);
+
+  const percent = getPercentForValue(
+    handle === "min" ? value[0] : value[1],
+    continuousMin,
+    continuousMax,
+  );
+
   const aria = {
     "aria-label": handle === "min" ? "Lower bound" : "Upper bound",
     "aria-valuemin": handle === "min" ? continuousMin : value[0],
     "aria-valuemax": handle === "min" ? value[1] : continuousMax,
     "aria-valuenow": handle === "min" ? value[0] : value[1],
   };
+
   return (
     <button
       type="button"
