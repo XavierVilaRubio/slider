@@ -7,8 +7,6 @@ export default async function Exercise2Page() {
   if (!res.ok) return "Failed to load fixed values range configuration";
   const data: {
     rangeValues: number[];
-    min: number;
-    max: number;
   } = await res.json();
 
   return (
@@ -18,8 +16,8 @@ export default async function Exercise2Page() {
       </h2>
       <Range
         rangeValues={data.rangeValues}
-        min={data.min}
-        max={data.max}
+        min={data.rangeValues[0]}
+        max={data.rangeValues[data.rangeValues.length - 1]}
         mode="fixed"
       />
     </main>

@@ -15,58 +15,66 @@ import {
   getAdjacentFixedValue,
   roundToStep,
 } from "@/app/components/range/utils";
-import type {
-  ChangeEvent,
-  KeyboardEvent,
-  PointerEvent as ReactPointerEvent,
-} from "react";
+import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { twMerge } from "tailwind-merge";
 
 type RangeInputProps = React.ComponentProps<"input"> & {
   handle: Exclude<ActiveHandle, null>;
-  label?: string;
+  label: string;
 };
 const Input = ({ handle, label, ...props }: RangeInputProps) => {
-  const { value, updateValue, continuousMin, continuousMax, step } =
-    useRangeContext();
-
-  const currentValue = handle === "min" ? value[0] : value[1];
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const [text, setText] = useState<string>(String(currentValue));
-
-  useEffect(() => {
-    if (document.activeElement !== inputRef.current) {
-      setText(String(currentValue));
-    }
-  }, [currentValue]);
-
-  const commit = useCallback(() => {
-    const parsed = Number(text);
-    if (!Number.isNaN(parsed)) {
-      updateValue(handle, parsed);
-      const normalized =
-        handle === "min"
-          ? roundToStep(clamp(parsed, continuousMin, value[1]), step)
-          : roundToStep(clamp(parsed, value[0], continuousMax), step);
-      setText(String(normalized));
-    } else {
-      setText(String(currentValue));
-    }
-  }, [
-    text,
-    handle,
+  const {
+    value,
     updateValue,
-    currentValue,
     continuousMin,
     continuousMax,
     step,
+    inputsText,
+    setInputsText,
+  } = useRangeContext();
+
+  const currentValue = handle === "min" ? value[0] : value[1];
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  const text = inputsText[handle];
+  const setText = useCallback(
+    (text: string) =>
+      setInputsText((current) => ({
+        ...current,
+        [handle]: text,
+      })),
+    [setInputsText, handle],
+  );
+
+  const commitTextChange = useCallback(() => {
+    const parsed = Number(text);
+    if (Number.isNaN(parsed)) {
+      setText(String(currentValue));
+      return;
+    }
+
+    updateValue(handle, parsed);
+
+    const min = handle === "min" ? continuousMin : value[0];
+    const max = handle === "max" ? continuousMax : value[1];
+    const normalized = roundToStep(clamp(parsed, min, max), step);
+    setText(String(normalized));
+  }, [
+    text,
+    updateValue,
+    handle,
+    continuousMin,
     value,
+    continuousMax,
+    step,
+    setText,
+    currentValue,
   ]);
 
   return (
     <label>
-      {label ? <span className="sr-only">{label}</span> : null}
+      <span className="sr-only">{label}</span>
       <input
         ref={inputRef}
         type="number"
@@ -81,10 +89,10 @@ const Input = ({ handle, label, ...props }: RangeInputProps) => {
             updateValue(handle, num);
           }
         }}
-        onBlur={commit}
+        onBlur={commitTextChange}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
-            commit();
+            commitTextChange();
             (e.target as HTMLInputElement).blur();
           } else if (e.key === "Escape") {
             setText(String(currentValue));
@@ -100,7 +108,7 @@ const Input = ({ handle, label, ...props }: RangeInputProps) => {
 };
 
 type RangeTrackProps = React.ComponentProps<"div">;
-const Track = ({ children, ...props }: RangeTrackProps) => {
+const Track = (props: RangeTrackProps) => {
   const { trackRef, mode, fixedValues } = useRangeContext();
   return (
     <div className="relative mx-2.5 my-auto flex-1">
@@ -109,7 +117,7 @@ const Track = ({ children, ...props }: RangeTrackProps) => {
         ref={trackRef}
         {...props}
       >
-        <Selected />
+        <Indicator />
         <Thumb handle="min" />
         <Thumb handle="max" />
       </div>
@@ -124,8 +132,7 @@ type FixedValueLabelsProps = {
   values: number[];
 };
 const FixedValueLabels = ({ values }: FixedValueLabelsProps) => {
-  const { getPercentForValue, continuousMin, continuousMax } =
-    useRangeContext();
+  const { getPercentForValue } = useRangeContext();
 
   return (
     <div className="relative mt-2">
@@ -145,8 +152,8 @@ const FixedValueLabels = ({ values }: FixedValueLabelsProps) => {
   );
 };
 
-type SelectedProps = React.ComponentProps<"div">;
-const Selected = (props: SelectedProps) => {
+type IndicatorProps = React.ComponentProps<"div">;
+const Indicator = (props: IndicatorProps) => {
   const { value, getPercentForValue } = useRangeContext();
   const minPercent = getPercentForValue(value[0]);
   const maxPercent = getPercentForValue(value[1]);
@@ -172,35 +179,30 @@ const Thumb = ({ handle, ...props }: ThumbProps) => {
     continuousMin,
     continuousMax,
     getPercentForValue,
-    handlePointerDownFactory,
-    handleKeyboardFactory,
+    startGrabbing,
+    handleKeyboardInput,
   } = useRangeContext();
   const percent = getPercentForValue(handle === "min" ? value[0] : value[1]);
-  const aria =
-    handle === "min"
-      ? {
-          "aria-label": "Lower bound",
-          "aria-valuemin": continuousMin,
-          "aria-valuemax": value[1],
-          "aria-valuenow": value[0],
-        }
-      : {
-          "aria-label": "Upper bound",
-          "aria-valuemin": value[0],
-          "aria-valuemax": continuousMax,
-          "aria-valuenow": value[1],
-        };
+  const aria = {
+    "aria-label": handle === "min" ? "Lower bound" : "Upper bound",
+    "aria-valuemin": handle === "min" ? continuousMin : value[0],
+    "aria-valuemax": handle === "min" ? value[1] : continuousMax,
+    "aria-valuenow": handle === "min" ? value[0] : value[1],
+  };
   return (
     <button
       type="button"
       className="absolute top-1/2 size-5 -translate-1/2 cursor-grab rounded-full border-2 border-white bg-blue-500 shadow transition-[transform,shadow] hover:scale-110 focus:scale-110 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none data-[active=true]:scale-110 data-[active=true]:cursor-grabbing"
       data-active={activeHandle === handle}
       style={{ left: `${percent}%` }}
-      onPointerDown={handlePointerDownFactory(handle)}
-      onKeyDown={handleKeyboardFactory(handle)}
+      onPointerDown={startGrabbing(handle)}
+      onKeyDown={handleKeyboardInput(handle)}
       role="slider"
+      aria-label={aria["aria-label"]}
+      aria-valuemin={aria["aria-valuemin"]}
+      aria-valuemax={aria["aria-valuemax"]}
+      aria-valuenow={aria["aria-valuenow"]}
       tabIndex={0}
-      {...aria}
       {...props}
     />
   );
@@ -225,6 +227,11 @@ const Range = (props: RangeProps) => {
     }
     return undefined;
   }, [mode, rangeValues]);
+
+  const [inputsText, setInputsText] = useState<{
+    min: string;
+    max: string;
+  }>({ min: String(min), max: String(max) });
 
   const [continuousMin, continuousMax] = useMemo(() => {
     const safeMin = Math.min(min, max);
@@ -327,10 +334,23 @@ const Range = (props: RangeProps) => {
     [mode, sortedFixedValues, continuousMin, continuousMax, updateValue],
   );
 
+  const updateInputsText = useCallback(
+    (handle: Exclude<ActiveHandle, null>) => {
+      const newInputsText = {
+        min: String(value[0]),
+        max: String(value[1]),
+      };
+      if (newInputsText[handle] === inputsText[handle]) return;
+      setInputsText(newInputsText);
+    },
+    [inputsText, value],
+  );
+
   useEffect(() => {
     if (!activeHandle) return;
     const onPointerMove = (event: PointerEvent) => {
       handlePointerMove(activeHandle, event.clientX);
+      updateInputsText(activeHandle);
     };
     const onPointerUp = () => {
       setActiveHandle(null);
@@ -345,31 +365,17 @@ const Range = (props: RangeProps) => {
       window.removeEventListener("pointercancel", onPointerUp);
       document.body.style.cursor = "";
     };
-  }, [activeHandle, handlePointerMove]);
+  }, [activeHandle, handlePointerMove, updateInputsText, value]);
 
-  const handlePointerDownFactory = useCallback(
-    (handle: Exclude<ActiveHandle, null>) => {
-      return (event: ReactPointerEvent<HTMLButtonElement>) => {
-        event.preventDefault();
-        setActiveHandle(handle);
-        document.body.style.cursor = "grabbing";
-      };
-    },
-    [],
-  );
+  const startGrabbing = useCallback((handle: Exclude<ActiveHandle, null>) => {
+    return (event: ReactPointerEvent<HTMLButtonElement>) => {
+      event.preventDefault();
+      setActiveHandle(handle);
+      document.body.style.cursor = "grabbing";
+    };
+  }, []);
 
-  const handleInputChangeFactory = useCallback(
-    (handle: Exclude<ActiveHandle, null>) => {
-      return (event: ChangeEvent<HTMLInputElement>) => {
-        const next = Number(event.target.value);
-        if (Number.isNaN(next)) return;
-        updateValue(handle, next);
-      };
-    },
-    [updateValue],
-  );
-
-  const handleKeyboardFactory = useCallback(
+  const handleKeyboardInput = useCallback(
     (handle: Exclude<ActiveHandle, null>) => {
       return (event: KeyboardEvent<HTMLButtonElement>) => {
         const currentValue = handle === "min" ? value[0] : value[1];
@@ -437,30 +443,29 @@ const Range = (props: RangeProps) => {
       setValue,
       continuousMin,
       continuousMax,
+      inputsText,
+      setInputsText,
       step,
       mode,
       fixedValues: sortedFixedValues,
       getPercentForValue,
       updateValue,
-      handlePointerDownFactory,
-      handleInputChangeFactory,
-      handleKeyboardFactory,
+      startGrabbing,
+      handleKeyboardInput,
       activeHandle,
     }),
     [
-      trackRef,
       value,
-      setValue,
       continuousMin,
       continuousMax,
+      inputsText,
       step,
       mode,
       sortedFixedValues,
       getPercentForValue,
       updateValue,
-      handlePointerDownFactory,
-      handleInputChangeFactory,
-      handleKeyboardFactory,
+      startGrabbing,
+      handleKeyboardInput,
       activeHandle,
     ],
   );

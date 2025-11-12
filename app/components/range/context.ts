@@ -1,7 +1,6 @@
 import {
   createContext,
   useContext,
-  type ChangeEvent,
   type Dispatch,
   type KeyboardEvent,
   type PointerEvent as ReactPointerEvent,
@@ -18,18 +17,20 @@ export type RangeContextValue = {
   setValue: Dispatch<SetStateAction<[number, number]>>;
   continuousMin: number;
   continuousMax: number;
+  inputsText: {
+    min: string;
+    max: string;
+  };
+  setInputsText: Dispatch<SetStateAction<{ min: string; max: string }>>;
   step: number;
   mode: RangeMode;
   fixedValues?: number[];
   getPercentForValue: (input: number) => number;
   updateValue: (handle: Exclude<ActiveHandle, null>, nextValue: number) => void;
-  handlePointerDownFactory: (
+  startGrabbing: (
     handle: Exclude<ActiveHandle, null>,
   ) => (event: ReactPointerEvent<HTMLButtonElement>) => void;
-  handleInputChangeFactory: (
-    handle: Exclude<ActiveHandle, null>,
-  ) => (event: ChangeEvent<HTMLInputElement>) => void;
-  handleKeyboardFactory: (
+  handleKeyboardInput: (
     handle: Exclude<ActiveHandle, null>,
   ) => (event: KeyboardEvent<HTMLButtonElement>) => void;
   activeHandle: ActiveHandle;
