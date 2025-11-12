@@ -113,7 +113,7 @@ const Track = (props: RangeTrackProps) => {
   return (
     <div className="relative mx-2.5 my-auto flex-1">
       <div
-        className="track relative h-2 w-full rounded-full bg-linear-to-r from-slate-200/90 to-blue-200/90"
+        className="track relative h-2 w-full touch-none rounded-full bg-linear-to-r from-slate-200/90 to-blue-200/90"
         ref={trackRef}
         {...props}
       >
@@ -192,9 +192,9 @@ const Thumb = ({ handle, ...props }: ThumbProps) => {
   return (
     <button
       type="button"
-      className="absolute top-1/2 size-5 -translate-1/2 cursor-grab rounded-full border-2 border-white bg-blue-500 shadow transition-[transform,shadow] hover:scale-110 focus:scale-110 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none data-[active=true]:scale-110 data-[active=true]:cursor-grabbing"
+      className="absolute top-1/2 size-5 -translate-1/2 cursor-grab touch-none rounded-full border-2 border-white bg-blue-500 shadow transition-[transform,shadow] hover:scale-110 focus:scale-110 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none data-[active=true]:scale-110 data-[active=true]:cursor-grabbing"
       data-active={activeHandle === handle}
-      style={{ left: `${percent}%` }}
+      style={{ left: `${percent}%`, touchAction: "none" }}
       onPointerDown={startGrabbing(handle)}
       onKeyDown={handleKeyboardInput(handle)}
       role="slider"
@@ -473,7 +473,10 @@ const Range = (props: RangeProps) => {
   return (
     <RangeContext.Provider value={ctx}>
       <div
-        className={twMerge("flex gap-8", className)}
+        className={twMerge(
+          "flex flex-col items-stretch gap-6 sm:flex-row sm:items-center sm:gap-8",
+          className,
+        )}
         data-dragging={Boolean(activeHandle)}
       >
         <Input handle="min" label="Minimum value" disabled={mode === "fixed"} />
