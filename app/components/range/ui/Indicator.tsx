@@ -1,5 +1,5 @@
-import { useRangeContext } from "@/components/range/context";
-import { getPercentForValue } from "../utils";
+import { useRangeContext } from "@/app/components/range/context/context";
+import { getPercentForValue } from "../utils/utils";
 
 type IndicatorProps = React.ComponentProps<"div">;
 const Indicator = (props: IndicatorProps) => {

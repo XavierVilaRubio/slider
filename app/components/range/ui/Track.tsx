@@ -1,4 +1,4 @@
-import { useRangeContext } from "@/components/range/context";
+import { useRangeContext } from "@/app/components/range/context/context";
 import FixedValueLabels from "@/components/range/ui/FixedValueLabels";
 import Indicator from "@/components/range/ui/Indicator";
 import Thumb from "@/components/range/ui/Thumb";

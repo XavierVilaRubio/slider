@@ -1,5 +1,8 @@
-import { type ActiveHandle, useRangeContext } from "@/components/range/context";
-import { clamp, roundToStep } from "@/components/range/utils";
+import {
+  type ActiveHandle,
+  useRangeContext,
+} from "@/app/components/range/context/context";
+import { clamp, roundToStep } from "@/app/components/range/utils/utils";
 import { useCallback, useRef } from "react";
 
 type RangeInputProps = React.ComponentProps<"input"> & {

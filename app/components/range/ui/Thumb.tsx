@@ -1,5 +1,8 @@
-import { type ActiveHandle, useRangeContext } from "@/components/range/context";
-import { getPercentForValue } from "@/components/range/utils";
+import {
+  type ActiveHandle,
+  useRangeContext,
+} from "@/app/components/range/context/context";
+import { getPercentForValue } from "@/app/components/range/utils/utils";
 type ThumbProps = React.ComponentProps<"button"> & {
   handle: Exclude<ActiveHandle, null>;
 };

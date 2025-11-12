@@ -1,5 +1,8 @@
-import { useRangeContext } from "@/components/range/context";
-import { formatCurrency, getPercentForValue } from "@/components/range/utils";
+import { useRangeContext } from "@/app/components/range/context/context";
+import {
+  formatCurrency,
+  getPercentForValue,
+} from "@/app/components/range/utils/utils";
 
 type FixedValueLabelsProps = {
   values: number[];
