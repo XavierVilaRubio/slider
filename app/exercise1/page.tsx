@@ -1,7 +1,7 @@
 import Range from "@/app/components/range/Range";
 
 export default async function Exercise1Page() {
-  const res = await fetch("http://localhost:8080/api/exercise1", {
+  const res = await fetch(`${process.env.BASE_URL}/api/exercise1`, {
     cache: "no-store",
   });
   if (!res.ok) return "Failed to load continuous range configuration";

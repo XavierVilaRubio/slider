@@ -1,7 +1,7 @@
 import Range from "@/app/components/range/Range";
 
 export default async function Exercise2Page() {
-  const res = await fetch("http://localhost:8080/api/exercise2", {
+  const res = await fetch(`${process.env.BASE_URL}/api/exercise2`, {
     cache: "no-store",
   });
   if (!res.ok) return "Failed to load fixed values range configuration";
