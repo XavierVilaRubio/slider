@@ -2,9 +2,7 @@ import Range from "@/app/components/range/ui/Range";
 import Link from "next/link";
 
 export default async function Exercise1Page() {
-  const res = await fetch(`${process.env.BASE_URL}/api/exercise1`, {
-    cache: "no-store",
-  });
+  const res = await fetch(`${process.env.BASE_URL}/exercise1`);
   if (!res.ok) return "Failed to load continuous range configuration";
   const range: {
     min: number;

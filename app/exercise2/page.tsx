@@ -2,9 +2,7 @@ import Range from "@/app/components/range/ui/Range";
 import Link from "next/link";
 
 export default async function Exercise2Page() {
-  const res = await fetch(`${process.env.BASE_URL}/api/exercise2`, {
-    cache: "no-store",
-  });
+  const res = await fetch(`${process.env.BASE_URL}/exercise2`);
   if (!res.ok) return "Failed to load fixed values range configuration";
   const data: {
     rangeValues: number[];
