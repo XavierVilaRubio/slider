@@ -1,36 +1,95 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Mango Frontend Test - Range Component
 
-## Getting Started
+## Demo
 
-First, run the development server:
+The live demo for this project can be found here:  
+[https://slider.xavivila.dev](https://slider.xavivila.dev)
+
+---
+
+## How to Run the Project
+
+### Install Dependencies
+
+To install the dependencies, run:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+bun i
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Run Tests
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+To run both unit tests and end-to-end (E2E) tests, follow these steps:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+#### Unit Tests
 
-## Learn More
+To run the unit tests, use the following command:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+bun run test
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+#### E2E Tests
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+To run the e2e tests, use the following command:
 
-## Deploy on Vercel
+```bash
+bun run test:e2e
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+To run the e2e tests in Playwright UI mode, use the following command:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+bun run test:e2e:ui
+```
+
+### .env
+
+```bash
+BASE_URL="http://demo3031494.mockable.io"
+```
+
+## Description
+
+This project involves creating a `<Range />` component using **Next.js**. The component has two modes:
+
+1. **Normal Range**: A configurable range with a minimum and maximum value.
+2. **Fixed Values Range**: A range with a set of predefined fixed values.
+
+---
+
+## Description
+
+### Mode 1: Normal Range
+
+Route: `/exercise1`
+
+**Requirements:**
+
+- The component **must not be** an HTML5 `<input type="range">`. It must be a custom one.
+- The user can drag two bullets (thumbs) along the range line.
+- The user can click on the currency labels (min or max) and set a new value.
+- The value should never be less than the min or greater than the max values.
+- When hovering over a bullet, it should get larger, and the cursor should change to a draggable one.
+- Dragging a bullet should change the cursor to a "dragging" cursor.
+- The min and max values cannot be crossed in the range.
+- Provide a mocked HTTP service returning min and max values (e.g., `{min: 1, max: 100}`) using a mock service like [Mockable.io](https://www.mockable.io/) or a custom mocked server.
+- Write as many unit tests as possible.
+
+---
+
+### Mode 2: Fixed Values Range
+
+Route: `/exercise2`
+
+**Requirements:**
+
+- The component **must not be** an HTML5 `<input type="range">`. It must be a custom one.
+- Given a set of values: `[1.99, 5.99, 10.99, 30.99, 50.99, 70.99]`, the user can only select these values along the range.
+- Provide a mocked HTTP service that returns the array of numbers (e.g., `[1.99, 5.99, 10.99, 30.99, 50.99, 70.99]`) using a mock service or a custom mocked server.
+- For this type of range, the currency labels are not input-changeable; they are only labels.
+- The user can drag two bullets (thumbs) along the range line.
+- The min and max values cannot be crossed in the range.
+- Write as many unit tests as possible.
+
+---
