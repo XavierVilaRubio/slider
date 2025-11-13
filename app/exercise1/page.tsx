@@ -2,7 +2,7 @@ import Range from "@/app/components/range/ui/Range";
 import Link from "next/link";
 
 export default async function Exercise1Page() {
-  const res = await fetch(`http://${process.env.VERCEL_URL}/api/exercise1`, {
+  const res = await fetch(`${process.env.BASE_URL}/api/exercise1`, {
     cache: "no-store",
   });
   if (!res.ok) return "Failed to load continuous range configuration";
